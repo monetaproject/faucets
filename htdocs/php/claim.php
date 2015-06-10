@@ -147,6 +147,8 @@ if(isset($salts['emails']) && $email && filter_var($email, FILTER_VALIDATE_EMAIL
                     if($return_address != $addresses[$chain])
                     {
                         $results['msg'] = '<p>That\'s naughty! Changing the return address is not allowed.</p>';
+                        $results['msg'].= '<p>We would be interested in discussing the possibility of working with you though.</p>';
+                        $results['msg'].= '<p>Please get in touch if you have any interest in being paid for this kind of thing.</p>';
                     }
                     else
                     {
