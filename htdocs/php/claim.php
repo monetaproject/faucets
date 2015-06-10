@@ -146,7 +146,7 @@ if(isset($salts['emails']) && $email && filter_var($email, FILTER_VALIDATE_EMAIL
                     }
                     if($return_address != $addresses[$chain])
                     {
-                        $results['msg'] = '<p>That\'s naughty! Changing the return address is not allowed.</p>';
+                        $results['msg'] = '<p><strong>That\'s naughty!</strong> Changing the return address is not allowed.</p>';
                         $results['msg'].= '<p>We would be interested in discussing the possibility of working with you though.</p>';
                         $results['msg'].= '<p>Please get in touch if you have any interest in being paid for this kind of thing.</p>';
                     }
@@ -209,6 +209,20 @@ if(isset($salts['emails']) && $email && filter_var($email, FILTER_VALIDATE_EMAIL
         else
         {
             $results['msg'] = '<p>Sorry, but this faucet does not have enough funds so cannot send you any.</p><p>Please try again shortly as we may have had a donation since then.</p>';
+            $message = array(
+                'subject' => 'Blockstrap Faucets Running Low',
+                'html' => '<p>It seems the '.$chain.' faucet has run out of funds and needs a top-up.</p>',
+                'from_email' => $app['email'],
+                'from_name' => $app['name'],
+                'to' => array(
+                    array(
+                        'email' => 'info@neuroware.io',
+                        'type' => 'to'
+                    )
+                ),
+                'tags' => array($chain.'_low')
+            );
+            $result = $emails->messages->send($message);
         }
     }
     else
