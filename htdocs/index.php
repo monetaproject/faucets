@@ -14,6 +14,7 @@ $options = json_decode(file_get_contents($php_base.'/json/index.json'), true);
 
 $ini = parse_ini_file(dirname($php_base).'/config.ini', true);
 $addresses = $ini['addresses'];
+$app = $ini['app'];
 $chains = array();
 $index = 0;
 
@@ -27,6 +28,7 @@ foreach($options['chains'] as $key => $chain)
     }
 }
 $options['chains'] = $chains;
+$options['app'] = $app;
 $faucet_count = count($chains);
 if($faucet_count == 1) $options['col']['css'] = 12;
 else if($faucet_count == 2) $options['col']['css'] = 6;
