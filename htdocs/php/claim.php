@@ -34,7 +34,7 @@ $sent = false;
 if(isset($_POST) && isset($_POST['email'])) $email = $_POST['email'];
 if(isset($_POST) && isset($_POST['chain'])) $chain = $_POST['chain'];
 if(isset($_POST) && isset($_POST['code'])) $code = $_POST['code'];
-if(isset($_POST) && isset($_POST['address'])) $address = $_POST[''];
+if(isset($_POST) && isset($_POST['address'])) $address = $_POST['address'];
 if(isset($_POST) && isset($_POST['sent'])) $sent = $_POST['sent'];
 if(isset($_POST) && isset($_POST['tx'])) $tx = $_POST['tx'];
 
@@ -135,46 +135,63 @@ if(isset($salts['emails']) && $email && filter_var($email, FILTER_VALIDATE_EMAIL
                 try
                 {
                     $bitcoin = new Bitcoin($usernames[$chain], $passwords[$chain], $hosts[$chain], $ports[$chain]);
-                    $outputs = null;
-                    $keys = [$keys[$chain]];
-                    $raw_tx_results = $bitcoin->signrawtransaction($tx, $outputs, $keys);
-                    if(is_array($raw_tx_results) && isset($raw_tx_results['hex']))
+                    $decoded_tx = $bitcoin->decoderawtransaction($tx);
+                    if(isset($decoded_tx['vout']) && isset($decoded_tx['vout'][1]) && isset($decoded_tx['vout'][1]['scriptPubKey']) && isset($decoded_tx['vout'][1]['scriptPubKey']['addresses']) && isset($decoded_tx['vout'][1]['scriptPubKey']['addresses'][0]))
                     {
-                        $raw_tx = $raw_tx_results['hex'];
-                        $txid = $bitcoin->sendrawtransaction($raw_tx);
-                        if($txid)
-                        {
-                            $results['success'] = true;
-                            $results['txid'] = $txid;
-                            $results['msg'] = '<p>Successfully sent '.($amount_to_send / 100000000).' coins to '.$address.'</p>';
-                            $bc_chain = $chain;
-                            if($bc_chain == 'doget') $bc_chain = 'dogt';
-                            if($bc_chain == 'dasht') $bc_chain = 'drkt';
-                            if($bc_chain == 'dash') $bc_chain = 'drk';
-                            $message = array(
-                                'subject' => 'Blockstrap Verification',
-                                'html' => $results['msg'].'<p>TXID: <a href="http://blockchains.io/'.$bc_chain.'/transaction/'.$txid.'/">'.$txid.'</a></p>',
-                                'from_email' => $app['email'],
-                                'from_name' => $app['name'],
-                                'to' => array(
-                                    array(
-                                        'email' => $email,
-                                        'type' => 'to'
-                                    )
-                                ),
-                                'tags' => array('em_'.md5($email).'_sent')
-                            );
-                            $result = $emails->messages->send($message);
-                        }
-                        else
-                        {
-                            $results['msg'] = '<p>Unable to relay the transaction</p>';
-                        }
-                        
+                        $return_address = $decoded_tx['vout'][1]['scriptPubKey']['addresses'][0];
                     }
                     else
                     {
-                        $results['msg'] = '<p>Unable to sign the transaction</p>';
+                        
+                    }
+                    if($return_address != $addresses[$chain])
+                    {
+                        $results['msg'] = '<p>That\'s naughty! Changing the return address is not allowed.</p>';
+                    }
+                    else
+                    {
+                        $bitcoin = new Bitcoin($usernames[$chain], $passwords[$chain], $hosts[$chain], $ports[$chain]);
+                        $outputs = null;
+                        $keys = [$keys[$chain]];
+                        $raw_tx_results = $bitcoin->signrawtransaction($tx, $outputs, $keys);
+                        if(is_array($raw_tx_results) && isset($raw_tx_results['hex']))
+                        {
+                            $raw_tx = $raw_tx_results['hex'];
+                            $txid = $bitcoin->sendrawtransaction($raw_tx);
+                            if($txid)
+                            {
+                                $results['success'] = true;
+                                $results['txid'] = $txid;
+                                $results['msg'] = '<p>Successfully sent '.($amount_to_send / 100000000).' coins to '.$address.'</p>';
+                                $bc_chain = $chain;
+                                if($bc_chain == 'doget') $bc_chain = 'dogt';
+                                if($bc_chain == 'dasht') $bc_chain = 'drkt';
+                                if($bc_chain == 'dash') $bc_chain = 'drk';
+                                $message = array(
+                                    'subject' => 'Blockstrap Verification',
+                                    'html' => $results['msg'].'<p>TXID: <a href="http://blockchains.io/'.$bc_chain.'/transaction/'.$txid.'/">'.$txid.'</a></p>',
+                                    'from_email' => $app['email'],
+                                    'from_name' => $app['name'],
+                                    'to' => array(
+                                        array(
+                                            'email' => $email,
+                                            'type' => 'to'
+                                        )
+                                    ),
+                                    'tags' => array('em_'.md5($email).'_sent')
+                                );
+                                $result = $emails->messages->send($message);
+                            }
+                            else
+                            {
+                                $results['msg'] = '<p>Unable to relay the transaction</p>';
+                            }
+
+                        }
+                        else
+                        {
+                            $results['msg'] = '<p>Unable to sign the transaction</p>';
+                        }
                     }
                 }
                 catch(error $e) 
